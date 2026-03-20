@@ -1,0 +1,6 @@
+[submodule "CLIProxyAPI"]
+	path = CLIProxyAPI
+	url = git@github.com:router-for-me/CLIProxyAPI.git
+[submodule "CPA-Dashboard"]
+	path = CPA-Dashboard
+	url = git@github.com:dongshuyan/CPA-Dashboard.git

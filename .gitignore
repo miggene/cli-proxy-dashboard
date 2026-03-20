@@ -1,0 +1,11 @@
+# 用户私有配置（含密钥，不提交）
+.env
+
+# macOS
+.DS_Store
+
+# 运行时数据（不提交）
+auths/*
+!auths/.gitkeep
+logs/*
+!logs/.gitkeep

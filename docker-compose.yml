@@ -1,0 +1,62 @@
+networks:
+  cpa-network:
+    driver: bridge
+
+services:
+  cli-proxy-api:
+    image: ${CLI_PROXY_IMAGE:-eceasy/cli-proxy-api:latest}
+    pull_policy: always
+    container_name: cli-proxy-api
+    networks:
+      - cpa-network
+    environment:
+      DEPLOY: ${DEPLOY:-docker}
+    ports:
+      - "${CPA_API_PORT:-8317}:8317"
+      - "8085:8085"
+      - "1455:1455"
+      - "54545:54545"
+      - "51121:51121"
+    volumes:
+      - ${CLI_PROXY_CONFIG_PATH:-./CLIProxyAPI/config.yaml}:/CLIProxyAPI/config.yaml
+      - ${CLI_PROXY_AUTH_PATH:-./auths}:/root/.cli-proxy-api
+      - ${CLI_PROXY_LOG_PATH:-./logs}:/CLIProxyAPI/logs
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://localhost:8317/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  cpa-dashboard:
+    build:
+      context: ./CPA-Dashboard
+      dockerfile: Dockerfile
+    container_name: cpa-dashboard
+    networks:
+      - cpa-network
+    environment:
+      # 使用 Docker 内部服务名通信，不能用 127.0.0.1
+      CPA_MANAGEMENT_URL: "http://cli-proxy-api:8317"
+      CPA_MANAGEMENT_KEY: ${CPA_MANAGEMENT_KEY:-}
+      # auth 目录挂载到容器内的同一路径
+      CPA_AUTH_DIR: "/root/.cli-proxy-api"
+      # Dashboard 监听所有接口（容器内必须）
+      WEBUI_HOST: "0.0.0.0"
+      WEBUI_PORT: "5000"
+      WEBUI_DEBUG: "${WEBUI_DEBUG:-false}"
+      # 在 Docker 中，Dashboard 不直接管理 CLIProxyAPI 进程
+      CPA_SERVICE_DIR: ""
+      CPA_BINARY_NAME: ""
+    ports:
+      - "${DASHBOARD_PORT:-5000}:5000"
+    volumes:
+      # 共享 auth 目录（Dashboard 本地模式下直接读取）
+      - ${CLI_PROXY_AUTH_PATH:-./auths}:/root/.cli-proxy-api
+      # 共享 config.yaml（Dashboard 读取端口/api-keys 等配置）
+      - ${CLI_PROXY_CONFIG_PATH:-./CLIProxyAPI/config.yaml}:/app/config.yaml
+    depends_on:
+      cli-proxy-api:
+        condition: service_healthy
+    restart: unless-stopped
