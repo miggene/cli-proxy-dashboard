@@ -49,6 +49,8 @@ services:
       # 在 Docker 中，Dashboard 不直接管理 CLIProxyAPI 进程
       CPA_SERVICE_DIR: ""
       CPA_BINARY_NAME: ""
+      DEPLOY: "docker"
+      CPA_LOG_FILE: "/app/logs/cliproxyapi.log"
     ports:
       - "${DASHBOARD_PORT:-5000}:5000"
     volumes:
@@ -56,6 +58,8 @@ services:
       - ${CLI_PROXY_AUTH_PATH:-./auths}:/root/.cli-proxy-api
       # 共享 config.yaml（Dashboard 读取端口/api-keys 等配置）
       - ${CLI_PROXY_CONFIG_PATH:-./CLIProxyAPI/config.yaml}:/app/config.yaml
+      # 共享日志目录（Dashboard 读取日志）
+      - ${CLI_PROXY_LOG_PATH:-./logs}:/app/logs
     depends_on:
       cli-proxy-api:
         condition: service_healthy
